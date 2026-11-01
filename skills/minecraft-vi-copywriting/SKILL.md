@@ -1,6 +1,6 @@
 ---
 name: minecraft-vi-copywriting
-description: Viết lại/viết mới chữ tiếng Việt trong server Minecraft (messages.yml, vi.yml, lang, config item: name, lore, GUI, NPC, announcement) cho tự nhiên, đúng thuật ngữ game, đúng chất game thủ Việt.
+description: Viết/sửa chữ tiếng Việt người chơi thấy trong server Minecraft — lang/messages.yml, config item, GUI, NPC, announcement — và cả khi code plugin mới (message, lang file mặc định, lệnh, GUI).
 ---
 
 # Văn phong tiếng Việt cho server Minecraft
@@ -8,6 +8,8 @@ description: Viết lại/viết mới chữ tiếng Việt trong server Minecra
 Mục tiêu: mọi chữ người chơi thấy phải đọc như **một người admin thân thiện đang nói chuyện** — không như văn bản hành chính, không như Google Dịch, cũng không suồng sã thô lỗ. Thuật ngữ game phải khớp với bản tiếng Việt chính thức của Minecraft để người chơi nhận ra ngay.
 
 Dùng skill này khi sửa hoặc viết mới: `messages.yml`, `vi.yml`, `lang/*.yml`, `messages_vi.properties`, file config item (display-name, lore), GUI/menu, hologram, scoreboard, tab, NPC dialogue, broadcast/announcement, tutorial, title/actionbar.
+
+**Cũng dùng khi viết plugin mới** (Java/Kotlin, Paper/Spigot/Velocity...): mọi chuỗi người chơi thấy trong code và trong lang file mặc định đi kèm plugin phải theo skill này ngay từ đầu — xem mục 8.
 
 ---
 
@@ -207,3 +209,47 @@ Thuật ngữ đã tra vanilla vi_vn: <key> → "<từ>"
 Cần bạn xác nhận:
 - `quest.npc-3`: không rõ NPC này là ai — đang giữ giọng trung tính.
 ```
+
+---
+
+## 8. Khi viết plugin mới
+
+Chữ trong plugin mới viết đúng ngay từ đầu thì sau này không phải đi sửa từng dòng. Áp dụng mục 2–6 cho mọi chuỗi người chơi thấy, cộng thêm các quy tắc dưới đây.
+
+### Tách chữ ra khỏi code
+
+- **Không hardcode chuỗi người chơi thấy** trong `sendMessage`, `Component.text`, title, GUI, lore... Mọi chuỗi đi qua lang file (vd `src/main/resources/lang/vi.yml`) và một lớp tra key (`Messages.get("economy.not-enough", ...)`).
+- **Tiếng Việt là ngôn ngữ mặc định** của file lang đi kèm. Nếu cần đa ngôn ngữ, thêm `en.yml` song song, cùng bộ key.
+- Lang file mặc định được copy ra thư mục plugin khi chạy lần đầu (`saveResource`), và khi plugin cập nhật thì **bổ sung key mới còn thiếu** vào file của admin chứ không ghi đè chữ họ đã sửa.
+- Giữ prefix (`[MyraMC]`) thành một key riêng, chèn qua placeholder `<prefix>` — không lặp prefix trong từng message.
+
+### Đặt key và placeholder
+
+- Key theo nhóm tính năng, dạng `nhom.tinh-huong`: `economy.pay.success`, `economy.pay.not-enough`, `teleport.cancelled-moved`, `gui.shop.title`.
+- **Placeholder có tên**, không dùng vị trí: `<player>`, `<amount>` (MiniMessage) hoặc `{player}` — không dùng `{0}`, `{1}`. Câu tiếng Việt hay phải đảo trật tự so với tiếng Anh, placeholder có tên giúp người dịch/sửa không nhầm.
+- **Không ghép câu bằng cách nối chuỗi** trong code (`"Bạn nhận " + amount + " " + item`). Luôn để nguyên câu trong lang file kèm placeholder, vì trật tự từ mỗi ngôn ngữ khác nhau.
+- Mỗi key là một câu hoàn chỉnh cho một tình huống. Không tái sử dụng một mảnh câu ở nhiều ngữ cảnh.
+
+### Định dạng
+
+- Paper 1.19+: ưu tiên **MiniMessage** (`<green>`, `<gradient>`, `<hover>`, `<click>`) thay cho mã `&`. Chọn một kiểu cho cả plugin.
+- Bảng màu theo vai trò, khai báo một lần (vd `<primary>`, `<secondary>`, `<error>`, `<success>`), không rải mã màu cứng khắp file.
+- Số: định dạng bằng code trước khi chèn (vd `1.250.000 xu` hoặc `1,25 triệu xu`) — chọn một kiểu cho cả server.
+- Thời gian: hiển thị ngắn kiểu `1 giờ 5 phút`, `30 giây`, `2 ngày`; không có số nhiều nên chỉ cần một dạng cho mỗi đơn vị.
+- Lore/GUI: để mỗi dòng là một phần tử list trong lang file, không tự cắt chuỗi trong code.
+
+### Lệnh, quyền, help
+
+- Tên lệnh và tham số giữ tiếng Anh, ngắn (`/pay`, `/shop`, `<player>`), nhưng **mô tả, usage và help** viết tiếng Việt theo mục 4: `Dùng: /pay <tên> <số tiền>`.
+- Tab-complete gợi ý giá trị thật (tên người chơi online, tên kit...), không gợi ý chữ mô tả.
+- Câu thiếu quyền, sai cú pháp, không tìm thấy người chơi, số không đúng, đang cooldown: viết sẵn cho từng lệnh hoặc dùng chung một bộ key `common.*`, theo mẫu ở mục 2 và 4.
+- `plugin.yml`: `description` của plugin và lệnh viết tiếng Việt ngắn gọn.
+
+### Log và console
+
+- Log console dành cho admin/dev: có thể để tiếng Anh hoặc tiếng Việt, nhưng **nhất quán trong một plugin** và không lẫn vào lang file của người chơi.
+- Lỗi người chơi thấy không bao giờ để lộ stack trace hay tên class — chỉ một câu dễ hiểu (`Có lỗi rồi, báo admin giúp nhé.`) và ghi chi tiết vào log.
+
+### Khi giao code
+
+Ngoài code, báo cáo thêm danh sách key mới trong lang file (key → câu tiếng Việt) để người dùng duyệt văn phong một chỗ.
